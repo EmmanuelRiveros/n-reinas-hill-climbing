@@ -1,11 +1,12 @@
-# Last Updated: 18 March 2018
+# Last Updated: 28 October 2025
 # Author: emreozdincer
+# Fork: EmmanuelRiveros
 
-from termcolor import colored
 from collections import Counter
 from math import factorial, exp, pow
 import random
 import copy
+import time
 
 # from time import sleep
 # import pdb # Debug
@@ -14,7 +15,7 @@ DEBUG = False
 # Print function for DEBUG = True
 def log(s):
     if DEBUG:
-        print s
+        print(s)
 
 # Calculates C(n,r)
 def combination(n,r, verbose = False):
@@ -25,12 +26,13 @@ def combination(n,r, verbose = False):
     return result
 
 class Game:
-    def __init__(self, n):
-        # Initialize a game board with n elements.
+    def __init__(self, n, verbose=False):
+        # Inicializa una tabla con n cantidad de elementos
         self.board = Board(n)
-        print ("Game initialized with size " + str(n) + ".")
+        if (verbose):
+            print ("Game initialized with size " + str(n) + ".")
 
-        # Initialize n queens, and place them on the board column by column
+        # Inicializa n cantidad de reinas y las coloca en cada columna
         self.queens = [None] * n
         for column in range(n):
             row = random.randint(0,n-1);
@@ -40,14 +42,14 @@ class Game:
         log (str(n) + " queens are randomly placed on board.")
         log (self.board)
 
-    # Updates current game state to a new state
+    # Actualiza el estado actual del juego a un nuevo estado
     def update_to_state(self, next_state):
         self.board = next_state.board
         self.queens = next_state.queens
 
-    # Moves a queen to new_row in game board
+    # Mueve una reina a una nueva fila "new_row" en el tablero del juego
     def move_queen(self, new_row, queen, verbose = False):
-        update_text = colored("\nQueen " + str(queen.id) + " to row " + str(new_row) + "!", 'green')
+        update_text = "\nQueen " + str(queen.id) + " to row " + str(new_row) + "!"
         old_row = queen.row
         self.board.update_element(0, old_row, queen.col)
         self.board.update_element(queen, new_row, queen.col)
@@ -61,8 +63,9 @@ class Game:
             print(self.board)
 
     # Hill Climbing algorithm
-    # Returns True if finds global minimum, False otherwise
-    def hill_climb(self, verbose = True):
+    # Regresa True si encuentra el minimo global, False en caso contrario
+    
+    def hill_climb(self, verbose = False):
         best_state_found = False
         iteration_count = 0
         while (best_state_found == False and self.board.current_score != 0):
@@ -70,21 +73,52 @@ class Game:
             best_state_found = self.go_to_next_best_state()
 
             if verbose:
-                print (colored("\nIteration " + str(iteration_count),'yellow'))
+                print ("\nIteration " + str(iteration_count))
                 print (self.board)
                 print ("Current score: " + str(self.board.current_score))
 
-        print ('Hit local minimum with score: ' + str(self.board.current_score))
+        #print ('Hit local minimum with score: ' + str(self.board.current_score))
 
         if (self.board.current_score == 0):
-            print (colored('Success!', 'green'))
+            if (verbose):
+                print ('Success!')
             return True
         else:
-            print (colored('Fail!','red'))
+            if (verbose):
+                print ('Fail!')
             return False
+    
+    def hill_climb_random_restart(self, max_restarts = 1000, verbose = False):
+
+        start_time = time.perf_counter()
+        total_iterations = 0
+
+        for restart in range(max_restarts):
+            if verbose:
+                print(f"\nReinicio #{restart + 1}")
+            
+            self.__init__(self.board.size_n)  # Re-initialize the game
+
+            solved = self.hill_climb(verbose=verbose)
+
+            total_iterations += 1
+            if solved:
+                end_time = time.perf_counter()
+                elapsed = end_time - start_time
+                print(f"\nSolucion encontrada despues de {restart + 1} reinicios")
+                print(f"Tiempo total: {elapsed:.4f} segundos")
+                return True
+            
+        end_time = time.perf_counter()
+        elapsed = end_time - start_time
+        print(f"\nNo se encontro solucion despues de {max_restarts} reinicios")
+        print(f"Tiempo total: {elapsed:.4f} segundos")
+        return False
+
+# Los siguientes son algoritmos alternativos de busqueda...
 
     # First Best Hill Climbing algorithm
-    # Returns True if finds global minimum, False otherwise
+    # Regresa True si encuentra el minimo global, False en caso contrario
     def first_best_hill_climb(self, verbose = True):
         better_state_exists = True
         iteration_count = 0
@@ -93,7 +127,7 @@ class Game:
             better_state_exists = self.go_to_first_best_state()
 
             if verbose:
-                print (colored("\nIteration " + str(iteration_count),'yellow'))
+                print ("\nIteration " + str(iteration_count))
                 print (self.board)
                 print ("Current score: " + str(self.board.current_score))
                 # sleep(0.2)
@@ -101,10 +135,10 @@ class Game:
         print ('Hit local minimum with score: ' + str(self.board.current_score))
 
         if (self.board.current_score == 0):
-            print (colored('Success!', 'green'))
+            print ('Success!')
             return True
         else:
-            print (colored('Fail!','red'))
+            print ('Fail!')
             return False
 
     # Simulated Annealing algorithm
@@ -118,7 +152,7 @@ class Game:
             self.simulated_annealing_next_node(temperature)
 
             if verbose:
-                print (colored("\nIteration " + str(iteration_count),'yellow'))
+                print ("\nIteration " + str(iteration_count))
                 print ('Temperature: ' + str(temperature))
                 print (self.board)
                 print ("Current score: " + str(self.board.current_score))
@@ -129,10 +163,10 @@ class Game:
         print ('Simulated Annealing result: ' + str(self.board.current_score))
 
         if (self.board.current_score == 0):
-            print (colored('Success!', 'green'))
+            print ('Success!')
             return True
         else:
-            print (colored('Fail!','red'))
+            print ('Fail!')
             return False
 
     # Goes to chosen state
@@ -270,13 +304,13 @@ class Game:
         return first_best_state_found
 
 class Board:
-    # Initializes empty n x n board
+    # Inicializa una tabla vacía de tamaño n x n
     def __init__(self, n):
         self.board = [[0]*n for x in range(n)]
         self.size_n = n
         self.current_score = 9999
 
-    # Represent the class object as its board
+    # Representa el objeto de la clase como la tabla
     def __repr__(self):
         # return ('B')
         return ('\n'.join(map(repr, self.board)))
@@ -288,12 +322,12 @@ class Board:
     def get_current_score(self):
         return self.current_score
 
-    # Calculates each score for current board state
+    # Calcula la puntuación del estado actual del tablero
     def calculate_score(self, check_vertical_conflicts = False, verbose = False):
         n = self.size_n
         score = 0
-        # Check horizontal conflicts
-        # For each row, count the number of queens, save in 'queens_by_rows' array
+        # Revisa conflictos horizontales
+        # Por cada fila cuenta el numero de reinas, guardandolas en el array 'queens_by_rows'
         queens_by_rows = [0] * n
         horizontal_conflicts = 0
         for row in range(n):
@@ -303,8 +337,8 @@ class Board:
             if (queens_by_rows[row] >= 2):
                 horizontal_conflicts += combination(queens_by_rows[row],2)
 
-        # Check vertical conflicts
-        # For each column, count the number of queens, save in 'queens_by_columns' array
+        # Revisa conflictos verticales
+        # Por cada columna cuenta el numero de reinas, guardandolas en el array 'queens_by_columns'
         if check_vertical_conflicts == False:
             pass
         else:
@@ -314,7 +348,7 @@ class Board:
                     if (isinstance(self.board[row][column], Queen)):
                         queens_by_columns[column] += 1
 
-        # Check diagonal conflicts
+        # Revisa conflictos diagonales
         f_diagonal_conflicts, b_diagonal_conflicts = self.get_diagonal_conflicts()
         score = horizontal_conflicts + f_diagonal_conflicts + b_diagonal_conflicts
         if (verbose):
@@ -324,8 +358,8 @@ class Board:
         return score;
 
     # Reference: https://stackoverflow.com/a/43311126/8214875
-    # Finds the diagonal arrays in board
-    # Returns conflict count of forward and backward diagonals
+    # Encuentra los arrays diagonales en el tablero
+    # Regresa el numero de conflictos en las diagonales de ida y vuelta
     def get_diagonal_conflicts(self, is_test = False, verbose = False):
         if is_test:
             test = [[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16]]
@@ -370,18 +404,18 @@ class Queen:
     def __init__(self,i=None,j=None):
         self.row = i
         self.col = j
-        # A queen is uniquely identified by its column number (starting from index 1)
+        # Una reina solo se identifica por su numero de columna (con el indice iniciando desde 1)
         self.id = self.col + 1
 
-    # Represent queen by a red Q
+    # Representa la reina como una R
     def __repr__(self):
-        return colored('Q','red')
+        return 'R'
 
-    # Update queen's placement
+    # Actualiza la fila de la reina
     def update_row(self, new_row):
         self.row = new_row
 
-    # Print a queen's location in the form of "[i,j]"
+    # Imprime la ubicacion de la reina en el formato "[i,j]"
     def print_location(self):
         if (self.row != None and self.col != None):
             print ("[" + str(self.row) + ", " + str(self.col) + "]")
